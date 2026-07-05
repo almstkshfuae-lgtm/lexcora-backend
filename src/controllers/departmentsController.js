@@ -44,6 +44,10 @@ const deleteDepartment = async (req, res) => {
     }
   } catch (error) {
     console.error('[DELETE_DEPARTMENT_ERROR]', { id: req.params.id, message: error.message, stack: error.stack });
+    const { isConstraintError, getConstraintErrorMessage } = require('../utils/dbErrors');
+    if (isConstraintError(error)) {
+      return res.fail(getConstraintErrorMessage(req), 409, 'CONSTRAINT_ERROR');
+    }
     res.fail(req.t('department.failedDelete'), 500, 'DEPARTMENT_DELETE_ERROR');
   }
 };

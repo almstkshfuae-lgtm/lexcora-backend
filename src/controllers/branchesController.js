@@ -52,6 +52,10 @@ const deleteBranch = async (req, res) => {
     }
   } catch (error) {
     console.error('[DELETE_BRANCH_ERROR]', { id: req.params.id, message: error.message, stack: error.stack });
+    const { isConstraintError, getConstraintErrorMessage } = require('../utils/dbErrors');
+    if (isConstraintError(error)) {
+      return res.fail(getConstraintErrorMessage(req), 409, 'CONSTRAINT_ERROR');
+    }
     res.fail(req.t('branch.failedDelete'), 500, 'BRANCH_DELETE_ERROR');
   }
 };
