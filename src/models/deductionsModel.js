@@ -12,8 +12,8 @@ const getAllDeductions = async (employeeId = null) => {
       e.name as employee_name,
       COALESCE(e.basic_salary, 0) + 
       COALESCE(e.housing_allowance, 0) + 
-      COALESCE(e.trnsportation_allownce, 0) + 
-      COALESCE(e.another_allownce, 0) as total_salary,
+      COALESCE(e.transportation_allowance, 0) + 
+      COALESCE(e.another_allowance, 0) as total_salary,
       cb.name as created_by_name
     FROM deductions d
     LEFT JOIN employees e ON d.employee_id = e.id
@@ -46,8 +46,8 @@ const getDeductionById = async (id) => {
       e.name as employee_name,
       COALESCE(e.basic_salary, 0) + 
       COALESCE(e.housing_allowance, 0) + 
-      COALESCE(e.trnsportation_allownce, 0) + 
-      COALESCE(e.another_allownce, 0) as total_salary,
+      COALESCE(e.transportation_allowance, 0) + 
+      COALESCE(e.another_allowance, 0) as total_salary,
       cb.name as created_by_name
     FROM deductions d
     LEFT JOIN employees e ON d.employee_id = e.id

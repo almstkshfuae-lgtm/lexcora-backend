@@ -117,7 +117,7 @@ async function migrate() {
       is_base BOOLEAN DEFAULT FALSE,
       exchange_rate DECIMAL(18,6) DEFAULT 1.0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
   `);
   console.log('OK  : currencies table ready');
   console.log('\nSeeding currencies...');

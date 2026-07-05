@@ -25,8 +25,8 @@ const processMonthlyPayroll = async (employeeId, payPeriod, extraData = {}, crea
   // 3. Prepare salary data
   const baseSalary = parseFloat(employee.basic_salary) || 0;
   const housingAllowance = parseFloat(employee.housing_allowance) || 0;
-  const transportationAllowance = parseFloat(employee.trnsportation_allownce) || 0;
-  const otherAllowance = parseFloat(employee.another_allownce) || 0;
+  const transportationAllowance = parseFloat(employee.transportation_allowance) || 0;
+  const otherAllowance = parseFloat(employee.another_allowance) || 0;
   
   const incentives = parseFloat(extraData.incentives) || 0;
   const bonuses = parseFloat(extraData.bonuses) || 0;
