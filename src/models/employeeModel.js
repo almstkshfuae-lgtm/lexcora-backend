@@ -523,12 +523,28 @@ const getEmployeeAccountStatement = async (employeeId, fromDate, toDate) => {
 };
 
 const checkDuplicateEmployee = async (name, phone, email, excludeId = null) => {
-  let query = `
-    SELECT id, name, phone, email 
-    FROM employees 
-    WHERE (name = ? OR phone = ? OR email = ?)
-  `;
-  const params = [name, phone || '', email || ''];
+  // Build conditions only for fields that are actually provided
+  const conditions = [];
+  const params = [];
+
+  if (name) {
+    conditions.push('name = ?');
+    params.push(name);
+  }
+  // Only check phone/email if they are non-null and non-empty strings
+  if (phone && phone.trim() !== '') {
+    conditions.push('phone = ?');
+    params.push(phone);
+  }
+  if (email && email.trim() !== '') {
+    conditions.push('email = ?');
+    params.push(email);
+  }
+
+  // If no conditions to check, no duplicate possible
+  if (conditions.length === 0) return null;
+
+  let query = `SELECT id, name, phone, email FROM employees WHERE (${conditions.join(' OR ')})`;
 
   // If excludeId is provided, exclude that employee from the check (for updates)
   if (excludeId) {
@@ -555,9 +571,43 @@ const getAdminEmployees = async () => {
   return rows;
 };
 
+/**
+ * Lightweight employee lookup for use in auth middleware.
+ * Avoids heavy LEFT JOINs (especially employee_documents) to prevent
+ * serverless function timeouts on Vercel.
+ */
+const getEmployeeForAuth = async (id) => {
+  const [rows] = await db.query(`
+    SELECT 
+      e.id,
+      e.username,
+      e.email,
+      e.phone,
+      e.name,
+      e.status,
+      e.role_id,
+      e.department_id,
+      e.branch_id,
+      e.direct_manager_id,
+      e.created_at,
+      e.updated_at,
+      r.role_ar,
+      r.role_en,
+      d.name_ar as department_ar,
+      d.name_en as department_en
+    FROM employees e
+    LEFT JOIN roles r ON e.role_id = r.id
+    LEFT JOIN departments d ON e.department_id = d.id
+    WHERE e.id = ?
+    LIMIT 1
+  `, [id]);
+  return rows[0] || null;
+};
+
 module.exports = {
   getAllEmployees,
   getEmployeeById,
+  getEmployeeForAuth,
   createEmployee,
   updateEmployee,
   deleteEmployee,

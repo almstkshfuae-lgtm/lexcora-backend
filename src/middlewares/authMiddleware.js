@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { getEmployeeById } = require('../models/employeeModel');
+const { getEmployeeForAuth } = require('../models/employeeModel');
 
 // JWT Secret - In production, this should be in environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
@@ -21,11 +21,8 @@ const generateToken = (user) => {
 };
 
 const verifyToken = (token) => {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
-    throw new Error('Invalid or expired token');
-  }
+  // Re-throw original error so error.name (TokenExpiredError / JsonWebTokenError) is preserved
+  return jwt.verify(token, JWT_SECRET);
 };
 
 
@@ -50,8 +47,8 @@ const authenticateToken = async (req, res, next) => {
     // Verify token
     const decoded = verifyToken(token);
 
-    // Get user details from database
-    const user = await getEmployeeById(decoded.id);
+    // Get user details from database (lightweight query - no document JOINs)
+    const user = await getEmployeeForAuth(decoded.id);
 
     if (!user) {
       return res.status(401).json({
@@ -146,7 +143,7 @@ const optionalAuth = async (req, res, next) => {
 
     if (token) {
       const decoded = verifyToken(token);
-      const user = await getEmployeeById(decoded.id);
+      const user = await getEmployeeForAuth(decoded.id);
 
       if (user) {
         req.user = {
