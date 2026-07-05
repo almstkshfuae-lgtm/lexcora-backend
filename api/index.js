@@ -1,4 +1,4 @@
-﻿require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
+require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
 const app = require("../src/app");
 
 // Global exception handling for serverless/production stability

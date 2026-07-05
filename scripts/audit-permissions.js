@@ -1,3 +1,10 @@
+
+// Production safety guard
+if (process.env.NODE_ENV === 'production' && !process.env.FORCE_PRODUCTION_MIGRATION) {
+  console.error('CRITICAL: This migration/maintenance script is not allowed to run in production directly.');
+  process.exit(1);
+}
+
 const fs = require('fs');
 const sql = fs.readFileSync('src/config/Database.sql', 'utf8');
 

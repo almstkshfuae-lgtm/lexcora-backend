@@ -227,7 +227,7 @@ const corsOptions = {
 
 app.use(securityMiddleware); // Block scanner probes — must be FIRST
 app.use(cors(corsOptions));
-app.use(cookieParser('law-backend-cookie-secret-for-session-security-2024')); // COOKIE_SECRET
+app.use(cookieParser(process.env.COOKIE_SECRET || 'dev-fallback-if-needed')); // COOKIE_SECRET
 app.use(express.json({ limit: '50mb' })); // Increase limit for file uploads
 app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Increase limit for file uploads
 app.use(requestLogger({ slowThresholdMs: parseInt(process.env.SLOW_REQUEST_MS || '1000', 10) }));
@@ -316,6 +316,27 @@ app.use("/api/banking", bankingRoute);
 app.use("/api/petty-cash", pettyCashRoute);
 app.use("/api/client-messages", clientMessagesRoute);
 app.use("/api/settings", settingsRoute);
+
+// Debug endpoint for frontend to check token user and permissions
+const { authenticateToken } = require("./middlewares/authMiddleware");
+app.get("/api/me", authenticateToken, async (req, res) => {
+  try {
+    const { getEmployeePermissions } = require("./models/employeeModel");
+    const permissions = await getEmployeePermissions(req.user.id);
+    res.success({
+      id: req.user.id,
+      username: req.user.username,
+      email: req.user.email,
+      name: req.user.employeeName,
+      role: req.user.role_en,
+      permissions: permissions.map(p => p.permission_en),
+      rawPermissions: permissions
+    }, "Current user profile and permissions fetched successfully");
+  } catch (error) {
+    console.error('[GET_ME_ERROR]', { message: error.message, stack: error.stack, userId: req.user?.id });
+    res.fail(error.message, 500, 'ME_ERROR');
+  }
+});
 
 app.get("/health", async (req, res) => {
   try {
