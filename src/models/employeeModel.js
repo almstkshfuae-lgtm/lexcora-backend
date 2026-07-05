@@ -96,16 +96,52 @@ const getEmployeeById = async (id) => {
   });
 
   // Remove document fields from employee object
-  const { document_id, document_name, document_url, document_created_at, uploaded_by, ...cleanEmployee } = employee;
+  const cleanEmployee = { ...employee };
+  delete cleanEmployee.document_id;
+  delete cleanEmployee.document_name;
+  delete cleanEmployee.document_url;
+  delete cleanEmployee.document_created_at;
+  delete cleanEmployee.uploaded_by;
 
   return {
     ...cleanEmployee,
+    departmentId: cleanEmployee.department_id,
+    branchId: cleanEmployee.branch_id,
+    directManagerId: cleanEmployee.direct_manager_id,
+    roleId: cleanEmployee.role_id,
+    employeeNumber: cleanEmployee.job_id,
+    identityNumber: cleanEmployee.eId,
+    passportNumber: cleanEmployee.passport,
+    phoneNumber: cleanEmployee.phone,
+    residenceExpiryDate: cleanEmployee.residence_end_date,
+    residenceEndDate: cleanEmployee.residence_end_date,
+    identityExpiryDate: cleanEmployee.id_end_date,
+    idEndDate: cleanEmployee.id_end_date,
+    passportExpiryDate: cleanEmployee.passport_end_date,
+    passportEndDate: cleanEmployee.passport_end_date,
+    workPermitExpiryDate: cleanEmployee.labor_card_end_date,
+    laborCardEndDate: cleanEmployee.labor_card_end_date,
+    insuranceExpiryDate: cleanEmployee.health_insurance_end_date,
+    healthInsuranceEndDate: cleanEmployee.health_insurance_end_date,
+    contractExpiryDate: cleanEmployee.contract_end_date,
+    contractEndDate: cleanEmployee.contract_end_date,
+    basicSalary: cleanEmployee.basic_salary,
+    anotherAllowance: cleanEmployee.another_allowance,
+    housingAllowance: cleanEmployee.housing_allowance,
+    transportationAllowance: cleanEmployee.transportation_allowance,
+    firstDayOfWork: cleanEmployee.first_day_of_work,
+    payType: cleanEmployee.pay_type,
+    accountNumber: cleanEmployee.account_number,
+    bankName: cleanEmployee.bank_name,
+    contractType: cleanEmployee.contract_type,
+    registrationExpiryDate: cleanEmployee.registration_expiration_date,
+    registrationExpirationDate: cleanEmployee.registration_expiration_date,
+    hourlyRate: cleanEmployee.hourly_rate,
     documents
   };
 };
 
 const createEmployee = async (employee) => {
-
   const {
     name,
     roleId,
@@ -138,39 +174,28 @@ const createEmployee = async (employee) => {
     hourlyRate = 0
   } = employee;
 
-  // Support both phoneNumber and phone field names
   const phoneNumber = employee.phoneNumber || employee.phone || null;
 
-  // Auto-generate username if not provided
   let username = employee.username;
   if (!username || username.trim() === '') {
     username = Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Auto-generate employee number (job_id) if not provided - it's NOT NULL in DB
   let employeeNumber = employee.employeeNumber || employee.job_id;
   if (!employeeNumber || String(employeeNumber).trim() === '') {
-    // Generate a unique employee number: EMP + timestamp + random
     employeeNumber = 'EMP' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
   }
 
-  // Helper function to convert empty strings to null for date fields
   const normalizeDate = (date) => {
-    if (date === '' || date === undefined || date === null) {
-      return null;
-    }
+    if (date === '' || date === undefined || date === null) return null;
     return date;
   };
 
-  // Helper function to convert empty strings to null for optional fields
   const normalizeValue = (value) => {
-    if (value === '' || value === undefined) {
-      return null;
-    }
+    if (value === '' || value === undefined) return null;
     return value;
   };
 
-  // Use provided password or generate a new one
   let password;
   let plainPassword = null;
   if (employee.password && employee.password !== '********') {
@@ -182,10 +207,11 @@ const createEmployee = async (employee) => {
     password = await hashPassword(plainPassword);
   }
 
+  // تم تصحيح ترتيب المصفوفة لتطابق الأعمدة تماماً
   const [result] = await db.query(`
     INSERT INTO employees (
       name, username, password, role_id, job_id, email, eId, passport, phone, department_id, direct_manager_id,
-    residence_end_date, id_end_date, passport_end_date, labor_card_end_date,
+      residence_end_date, id_end_date, passport_end_date, labor_card_end_date,
       health_insurance_end_date, contract_end_date, basic_salary, branch_id, status,
       account_close_date, another_allowance, account_activation_date, first_day_of_work,
       housing_allowance, transportation_allowance, pay_type, iban, account_number, bank_name, contract_type,
@@ -195,13 +221,13 @@ const createEmployee = async (employee) => {
     name,
     username,
     password,
-    roleId,
+    normalizeValue(roleId),
     normalizeValue(employeeNumber),
     email,
     normalizeValue(identityNumber),
     normalizeValue(passportNumber),
-    phoneNumber,
-    departmentId,
+    phoneNumber, // تم نقله إلى الترتيب الصحيح المطابق لعمود phone
+    normalizeValue(departmentId),
     normalizeValue(directManagerId),
     normalizeDate(residenceExpiryDate),
     normalizeDate(identityExpiryDate),
@@ -210,7 +236,7 @@ const createEmployee = async (employee) => {
     normalizeDate(insuranceExpiryDate),
     normalizeDate(contractExpiryDate),
     basicSalary || 0,
-    branchId,
+    normalizeValue(branchId),
     status,
     normalizeDate(accountCloseDate),
     anotherAllowance || 0,
@@ -241,23 +267,23 @@ const updateEmployee = async (id, employee) => {
     identityNumber,
     passportNumber,
     phoneNumber,
-    phone, // Support both phoneNumber and phone
+    phone,
     departmentId,
     branchId,
     directManagerId,
     status,
     residenceEndDate,
-    residenceExpiryDate, // Support both naming conventions
+    residenceExpiryDate,
     idEndDate,
-    identityExpiryDate, // Support both naming conventions
+    identityExpiryDate,
     passportEndDate,
-    passportExpiryDate, // Support both naming conventions
+    passportExpiryDate,
     laborCardEndDate,
-    workPermitExpiryDate, // Support both naming conventions
+    workPermitExpiryDate,
     healthInsuranceEndDate,
-    insuranceExpiryDate, // Support both naming conventions
+    insuranceExpiryDate,
     contractEndDate,
-    contractExpiryDate, // Support both naming conventions
+    contractExpiryDate,
     basicSalary = 0,
     accountCloseDate,
     anotherAllowance = 0,
@@ -271,27 +297,20 @@ const updateEmployee = async (id, employee) => {
     bankName,
     contractType,
     registrationExpirationDate,
-    registrationExpiryDate, // Support both naming conventions
+    registrationExpiryDate,
     hourlyRate
   } = employee;
 
-  // Helper function to convert empty strings to null for date fields
   const normalizeDate = (date) => {
-    if (date === '' || date === undefined || date === null) {
-      return null;
-    }
+    if (date === '' || date === undefined || date === null) return null;
     return date;
   };
 
-  // Helper function to convert empty strings to null for optional fields
   const normalizeValue = (value) => {
-    if (value === '' || value === undefined) {
-      return null;
-    }
+    if (value === '' || value === undefined) return null;
     return value;
   };
 
-  // Use the correct field names (support both naming conventions)
   const finalPhone = phoneNumber || phone;
   const finalResidenceEndDate = residenceExpiryDate || residenceEndDate;
   const finalIdEndDate = identityExpiryDate || idEndDate;
@@ -299,9 +318,17 @@ const updateEmployee = async (id, employee) => {
   const finalLaborCardEndDate = workPermitExpiryDate || laborCardEndDate;
   const finalHealthInsuranceEndDate = insuranceExpiryDate || healthInsuranceEndDate;
   const finalContractEndDate = contractExpiryDate || contractEndDate;
-  const finalRegistrationExpirationDate = registrationExpiryDate || employee.registrationExpirationDate;
+  const finalRegistrationExpirationDate = registrationExpiryDate || registrationExpirationDate || employee.registration_expiration_date;
 
-  // Build the query dynamically to include password only if it's not masked
+  // 1. التحقق من عدم تكرار الاسم أو الهاتف أو البريد الإلكتروني مع موظف آخر
+  if (name || finalPhone || email) {
+    const duplicate = await checkDuplicateEmployee(name, finalPhone, email, id);
+    if (duplicate) {
+      throw new Error(`بيانات مكررة: الموظف متاح بالفعل برقم معرف ${duplicate.id}`);
+    }
+  }
+
+  // 2. بناء جملة الاستعلام الأساسية لتحديث الحقول المعتادة
   let query = `UPDATE employees SET
     name = ?, username = ?, role_id = ?, job_id = ?, email = ?, 
     eId = ?, passport = ?, phone = ?, department_id = ?, branch_id = ?,
@@ -324,7 +351,7 @@ const updateEmployee = async (id, employee) => {
     normalizeValue(finalPhone),
     normalizeValue(departmentId),
     normalizeValue(branchId),
-    normalizeValue(directManagerId),
+    normalizeValue(directManagerId), // لضمان تحويل السلسلة النصية الفارغة إلى NULL للمدير
     normalizeValue(status) || 'active',
     normalizeDate(finalResidenceEndDate),
     normalizeDate(finalIdEndDate),
@@ -348,11 +375,12 @@ const updateEmployee = async (id, employee) => {
     hourlyRate || 0
   ];
 
-  // Only update password if it's provided and not masked
-  if (password && password !== '********') {
-    const hashedPwd = await hashPassword(password);
-    // Append password field to the SET clause (before WHERE)
-    query = query + ', password = ?';
+  let plainPassword = null;
+  // 3. التحكم الكامل في تعديل كلمة المرور: يتم التحديث فقط إذا تم إرسال كلمة مرور حقيقية وغير مخفية
+  if (password && password.trim() !== '' && password !== '********') {
+    plainPassword = password;
+    const hashedPwd = await hashPassword(plainPassword);
+    query += ', password = ?';
     params.push(hashedPwd);
   }
 
@@ -360,8 +388,7 @@ const updateEmployee = async (id, employee) => {
   params.push(id);
 
   const [result] = await db.query(query, params);
-
-  return result.affectedRows > 0;
+  return { success: result.affectedRows > 0, plainPassword };
 };
 
 const deleteEmployee = async (id) => {
@@ -384,7 +411,43 @@ const getEmployeeByUsername = async (username) => {
     WHERE e.username = ?
   `, [username]);
 
-  return rows[0];
+  if (rows.length === 0) return null;
+  const user = rows[0];
+  return {
+    ...user,
+    departmentId: user.department_id,
+    branchId: user.branch_id,
+    directManagerId: user.direct_manager_id,
+    roleId: user.role_id,
+    employeeNumber: user.job_id,
+    identityNumber: user.eId,
+    passportNumber: user.passport,
+    phoneNumber: user.phone,
+    residenceExpiryDate: user.residence_end_date,
+    residenceEndDate: user.residence_end_date,
+    identityExpiryDate: user.id_end_date,
+    idEndDate: user.id_end_date,
+    passportExpiryDate: user.passport_end_date,
+    passportEndDate: user.passport_end_date,
+    workPermitExpiryDate: user.labor_card_end_date,
+    laborCardEndDate: user.labor_card_end_date,
+    insuranceExpiryDate: user.health_insurance_end_date,
+    healthInsuranceEndDate: user.health_insurance_end_date,
+    contractExpiryDate: user.contract_end_date,
+    contractEndDate: user.contract_end_date,
+    basicSalary: user.basic_salary,
+    anotherAllowance: user.another_allowance,
+    housingAllowance: user.housing_allowance,
+    transportationAllowance: user.transportation_allowance,
+    firstDayOfWork: user.first_day_of_work,
+    payType: user.pay_type,
+    accountNumber: user.account_number,
+    bankName: user.bank_name,
+    contractType: user.contract_type,
+    registrationExpiryDate: user.registration_expiration_date,
+    registrationExpirationDate: user.registration_expiration_date,
+    hourlyRate: user.hourly_rate
+  };
 };
 
 const updateEmployeePassword = async (id, newPassword) => {
@@ -614,7 +677,20 @@ const getEmployeeForAuth = async (id) => {
     WHERE e.id = ?
     LIMIT 1
   `, [id]);
-  return rows[0] || null;
+  
+  if (rows.length === 0) return null;
+  const user = rows[0];
+  return {
+    ...user,
+    departmentId: user.department_id,
+    branchId: user.branch_id,
+    directManagerId: user.direct_manager_id,
+    roleId: user.role_id,
+    employeeNumber: user.job_id,
+    identityNumber: user.eId,
+    passportNumber: user.passport,
+    phoneNumber: user.phone
+  };
 };
 
 module.exports = {
