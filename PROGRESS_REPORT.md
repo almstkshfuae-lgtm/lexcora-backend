@@ -144,6 +144,32 @@ Due to the Vercel migration, local disk writing (e.g., via `fs` or traditional `
   - **Transitive Overrides:** Added `overrides` block in `package.json` to secure transitive dependencies: `axios` (`^1.18.1`), `form-data` (`^4.0.6`), `tmp` (`^0.2.7`), `ws` (`^8.21.0`), `qs` (`^6.15.3`), `js-yaml` (`^4.3.0`), `@grpc/grpc-js` (`^1.14.4`), `@babel/core` (`^7.29.7`), `undici` (`^6.27.0` / `^7.28.0`), and `protobufjs` (`^7.6.5` / `^8.6.6`).
 - **Result:** Completed verification via `npm audit` which now reports exactly **0 vulnerabilities**. Ran all unit/integration tests successfully with no regressions.
 
+### Employee Creation Duplicate Check Stabilization (July 2026)
+- **Problem:** When creating new employees, the frontend duplicate checking was completely bypassed due to a state nesting mismatch (`duplicateCheck.isDuplicate` checked instead of `duplicateCheck.data?.isDuplicate`), causing duplicate requests to hit the backend directly. In addition, the backend duplicate checking did not include constraints for `username` and `employeeNumber` (job_id), resulting in raw database unique constraint errors that caused the POST request to fail with an unhandled 400 Bad Request error.
+- **Solution:** Restabilized the employee duplicate checking logic across the frontend and backend.
+- **Key Changes:**
+  - **Frontend Mismatch Fix:** Corrected `AddEmployeeDialog.js` to correctly check the nested response structure under `duplicateCheck.data` and show the localized duplicate error toast.
+  - **Backend Support:** Updated `checkDuplicateEmployee` in `employeeModel.js`, `employeeService.js`, and `employeeController.js` to extract and validate the uniqueness of `username` and `employeeNumber` (job_id).
+  - **Error Specificity:** Enhanced the backend duplicate check to throw and return highly descriptive error messages specifying exactly which field caused the duplication (e.g. name, phone number, email, username, or employee number) instead of generic database errors.
+  - **Localization:** Added corresponding translation keys (`duplicateUsernameExists`, `duplicateEmployeeNumberExists`) to both `en.json` and `ar.json` for proper bilingual RTL/LTR representation.
+
+### Plural Permissions Mismatch Fix (July 2026)
+- **Problem:** When non-admin users logged in, certain endpoints (like potential clients or sessions list) returned `403 Forbidden` even if the employee had the necessary permissions. This was caused by the backend routes and permissions config checking for plural string formats (e.g., `View Parties` and `View Sessions`), whereas the database permissions table stores singular names (e.g., `View Party` and `View Session`).
+- **Solution:** Aligned all backend permission checks with the exact database permission schema.
+- **Key Changes:**
+  - Modified `partiesRoute.js` to check for `'View Party'` instead of the plural `'View Parties'` for potential clients endpoint.
+  - Modified `sessionsRoute.js` to check for `'View Session'` instead of the plural `'View Sessions'`.
+  - Updated centralized `permissions.js` configuration keys (`parties.list` and `sessions.list`) to match their DB singular equivalents.
+
+### Missing Core Employee & Payroll Permissions Seeding (July 2026)
+- **Problem:** Non-admin employees with "all permissions" assigned encountered a `403 Forbidden` error when trying to fetch the employee list (e.g., on meeting creation, tasks assignment, and HR requests). This occurred because core employee management permissions (`View Employee`, `Add Employee`, `Edit Employee`, `Delete Employee`, `View Employee Account Statement`) and payroll permissions (`View Payroll`, `Process Payroll`, `Pay Salary`) were missing from the database's `permissions` table, causing the `checkPermission` middleware to reject access for non-admins.
+- **Solution:** Created and executed a database migration/seeding script to insert these 8 core permissions into the live `permissions` table and automatically assign them to existing non-admin employees who have permissions active.
+
+### Local Development Environment Storage Fix (July 2026)
+- **Problem**: When uploading files locally, the storage API returned a 500 Internal Server Error because the `@vercel/blob` storage client could not find the read-write token (`BLOB_READ_WRITE_TOKEN`). Vercel CLI stores local environment variables in `.env.local`, but the Express backend entrypoint was hardcoded to only load `.env`.
+- **Solution**: Modified `api/index.js` to load `.env.local` first and fall back to `.env`. This ensures all local Vercel credentials are successfully injected into the process environment during development.
+
+
 ## 7. Ongoing Tasks
 - Completed endpoint validation pass for Express on serverless: confirmed app startup, route registration, and production-safe behavior for Vercel deployment.
 - Disabled local `/uploads` static serving in production so file access is handled exclusively through Vercel Blob.

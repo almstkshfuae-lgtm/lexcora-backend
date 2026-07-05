@@ -138,6 +138,9 @@ const getDepreciationSchedule = (params) => {
   const schedule = [];
   let currentBookValue = parseFloat(purchaseCost) || 0;
   let currentDate = new Date(purchaseDate);
+  if (!purchaseDate || isNaN(currentDate.getTime())) {
+    currentDate = new Date();
+  }
   let totalDepreciation = 0;
 
   for (let i = 0; i < periods; i++) {

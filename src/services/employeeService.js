@@ -53,13 +53,22 @@ const addEmployee = async (data, createdBy = null) => {
   const phoneForDuplicateCheck = payload.phoneNumber || payload.phone || null;
 
   // Duplicate check - only check fields that are actually provided
-  const duplicate = await employeeModel.checkDuplicateEmployee(
-    payload.name,
-    phoneForDuplicateCheck,
-    payload.email
-  );
+  const duplicate = await employeeModel.checkDuplicateEmployee({
+    name: payload.name,
+    phone: phoneForDuplicateCheck,
+    email: payload.email,
+    username: payload.username,
+    employeeNumber: payload.employeeNumber || payload.job_id
+  });
   if (duplicate) {
-    throw new Error('Employee with same name, phone, or email already exists');
+    let field = 'data';
+    let fieldAr = 'البيانات';
+    if (duplicate.name === payload.name) { field = 'name'; fieldAr = 'الاسم'; }
+    else if (duplicate.phone === phoneForDuplicateCheck) { field = 'phone number'; fieldAr = 'رقم الهاتف'; }
+    else if (duplicate.email === payload.email) { field = 'email'; fieldAr = 'البريد الإلكتروني'; }
+    else if (duplicate.username === payload.username) { field = 'username'; fieldAr = 'اسم المستخدم'; }
+    else if (duplicate.job_id === (payload.employeeNumber || payload.job_id)) { field = 'employee number'; fieldAr = 'رقم الموظف'; }
+    throw new Error(`Employee with same ${field} already exists`);
   }
 
   const createResult = await employeeModel.createEmployee(payload);
@@ -163,14 +172,22 @@ const updateEmployee = async (id, data, updatedBy = null) => {
   }
 
   // Duplicate check (exclude current ID)
-  const duplicate = await employeeModel.checkDuplicateEmployee(
-    payload.name,
-    payload.phone,
-    payload.email,
-    id
-  );
+  const duplicate = await employeeModel.checkDuplicateEmployee({
+    name: payload.name,
+    phone: payload.phone || payload.phoneNumber,
+    email: payload.email,
+    username: payload.username,
+    employeeNumber: payload.employeeNumber || payload.job_id,
+    excludeId: id
+  });
   if (duplicate) {
-    throw new Error('Employee with same name, phone, or email already exists');
+    let field = 'data';
+    if (duplicate.name === payload.name) field = 'name';
+    else if (duplicate.phone === (payload.phone || payload.phoneNumber)) field = 'phone number';
+    else if (duplicate.email === payload.email) field = 'email';
+    else if (duplicate.username === payload.username) field = 'username';
+    else if (duplicate.job_id === (payload.employeeNumber || payload.job_id)) field = 'employee number';
+    throw new Error(`Employee with same ${field} already exists`);
   }
 
   // Validate dates (if provided)
@@ -267,8 +284,18 @@ const getEmployeeAccountStatement = async (employeeId, fromDate, toDate) => {
   return await employeeModel.getEmployeeAccountStatement(employeeId, fromDate, toDate);
 };
 
-const checkDuplicateEmployee = async (name, phone, email, excludeId = null) => {
-  return await employeeModel.checkDuplicateEmployee(name, phone, email, excludeId);
+const checkDuplicateEmployee = async (nameOrObj, phone, email, username = null, employeeNumber = null, excludeId = null) => {
+  if (nameOrObj && typeof nameOrObj === 'object') {
+    return await employeeModel.checkDuplicateEmployee(nameOrObj);
+  }
+  return await employeeModel.checkDuplicateEmployee({
+    name: nameOrObj,
+    phone,
+    email,
+    username,
+    employeeNumber,
+    excludeId
+  });
 };
 
 const getAdminEmployees = async () => {

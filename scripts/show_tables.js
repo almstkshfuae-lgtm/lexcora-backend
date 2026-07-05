@@ -1,7 +1,14 @@
+
+// Production safety guard
+if (process.env.NODE_ENV === 'production' && !process.env.FORCE_PRODUCTION_MIGRATION) {
+  console.error('CRITICAL: This migration/maintenance script is not allowed to run in production directly.');
+  process.exit(1);
+}
+
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-async function createProjectsTable() {
+async function checkTables() {
   let connection;
   try {
     const config = {
@@ -13,8 +20,8 @@ async function createProjectsTable() {
     };
     connection = await mysql.createConnection(process.env.DATABASE_URL || config);
     
-    await connection.query('CREATE TABLE IF NOT EXISTS projects (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)');
-    console.log('Projects table created successfully');
+    const [tables] = await connection.query('SHOW TABLES');
+    console.log(tables.map(r => Object.values(r)[0]));
     
   } catch (error) {
     console.error(error);
@@ -23,4 +30,4 @@ async function createProjectsTable() {
   }
 }
 
-createProjectsTable();
+checkTables();

@@ -7,8 +7,15 @@
  * Run with: node fix_arabic_filenames.js
  */
 
+// Production safety guard
+if (process.env.NODE_ENV === 'production' && !process.env.FORCE_PRODUCTION_MIGRATION) {
+  console.error('CRITICAL: This migration/maintenance script is not allowed to run in production directly.');
+  process.exit(1);
+}
+
+
 require('dotenv').config();
-const db = require('./src/config/db');
+const db = require('../src/config/db');
 
 // Tables that contain document_name fields
 const TABLES = [

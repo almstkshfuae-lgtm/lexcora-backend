@@ -13,7 +13,7 @@ const { paginationValidator, sortValidator } = require('../middlewares/validator
 router.get(
   '/',
   authenticateToken,
-  checkPermission('View Sessions'),
+  checkPermission('View Session'),
   paginationValidator,
   sortValidator(['session_date', 'created_at', 'id']),
   sessionsController.getAllSessions

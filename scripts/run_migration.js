@@ -1,4 +1,11 @@
 // Quick script to run the migration
+
+// Production safety guard
+if (process.env.NODE_ENV === 'production' && !process.env.FORCE_PRODUCTION_MIGRATION) {
+  console.error('CRITICAL: This migration/maintenance script is not allowed to run in production directly.');
+  process.exit(1);
+}
+
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 const fs = require('fs');
@@ -18,7 +25,7 @@ async function runMigration() {
   try {
     console.log('Connected to database...');
     
-    const migrationFile = path.join(__dirname, 'migrations', '20260427_accounting_system.sql');
+    const migrationFile = path.join(__dirname, '../migrations', '20260427_accounting_system.sql');
     const sql = fs.readFileSync(migrationFile, 'utf8');
     
     console.log('Running migration...');

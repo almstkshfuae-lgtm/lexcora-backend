@@ -101,13 +101,20 @@ const getEmployeeAccountStatement = async (req, res) => {
 
 const checkDuplicateEmployee = async (req, res) => {
   try {
-    const { name, phone, email, excludeId } = req.query;
+    const { name, phone, email, username, employeeNumber, excludeId } = req.query;
     
-    if (!name && !phone && !email) {
+    if (!name && !phone && !email && !username && !employeeNumber) {
       return res.fail(req.t('generic.validationError'), 400, 'MISSING_FIELDS');
     }
     
-    const duplicate = await employeeService.checkDuplicateEmployee(name, phone, email, excludeId);
+    const duplicate = await employeeService.checkDuplicateEmployee({
+      name,
+      phone,
+      email,
+      username,
+      employeeNumber,
+      excludeId
+    });
     
     if (duplicate) {
       return res.success({
@@ -116,7 +123,9 @@ const checkDuplicateEmployee = async (req, res) => {
           id: duplicate.id,
           name: duplicate.name,
           phone: duplicate.phone,
-          email: duplicate.email
+          email: duplicate.email,
+          username: duplicate.username,
+          employeeNumber: duplicate.job_id
         }
       });
     }

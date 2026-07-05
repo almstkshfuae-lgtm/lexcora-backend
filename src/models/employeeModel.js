@@ -598,7 +598,19 @@ const getEmployeeAccountStatement = async (employeeId, fromDate, toDate) => {
   }
 };
 
-const checkDuplicateEmployee = async (name, phone, email, excludeId = null) => {
+const checkDuplicateEmployee = async (nameOrObj, phone, email, excludeId = null) => {
+  let name, username, employeeNumber;
+  if (nameOrObj && typeof nameOrObj === 'object') {
+    name = nameOrObj.name;
+    phone = nameOrObj.phone;
+    email = nameOrObj.email;
+    username = nameOrObj.username;
+    employeeNumber = nameOrObj.employeeNumber || nameOrObj.job_id;
+    excludeId = nameOrObj.excludeId;
+  } else {
+    name = nameOrObj;
+  }
+
   // Build conditions only for fields that are actually provided
   const conditions = [];
   const params = [];
@@ -607,20 +619,28 @@ const checkDuplicateEmployee = async (name, phone, email, excludeId = null) => {
     conditions.push('name = ?');
     params.push(name);
   }
-  // Only check phone/email if they are non-null and non-empty strings
-  if (phone && phone.trim() !== '') {
+  // Only check phone/email/username/job_id if they are non-null and non-empty strings
+  if (phone && String(phone).trim() !== '') {
     conditions.push('phone = ?');
     params.push(phone);
   }
-  if (email && email.trim() !== '') {
+  if (email && String(email).trim() !== '') {
     conditions.push('email = ?');
     params.push(email);
+  }
+  if (username && String(username).trim() !== '') {
+    conditions.push('username = ?');
+    params.push(username);
+  }
+  if (employeeNumber && String(employeeNumber).trim() !== '') {
+    conditions.push('job_id = ?');
+    params.push(employeeNumber);
   }
 
   // If no conditions to check, no duplicate possible
   if (conditions.length === 0) return null;
 
-  let query = `SELECT id, name, phone, email FROM employees WHERE (${conditions.join(' OR ')})`;
+  let query = `SELECT id, name, phone, email, username, job_id FROM employees WHERE (${conditions.join(' OR ')})`;
 
   // If excludeId is provided, exclude that employee from the check (for updates)
   if (excludeId) {

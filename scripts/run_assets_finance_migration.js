@@ -1,6 +1,13 @@
 /**
  * Assets → Finance Integration Migration
  */
+
+// Production safety guard
+if (process.env.NODE_ENV === 'production' && !process.env.FORCE_PRODUCTION_MIGRATION) {
+  console.error('CRITICAL: This migration/maintenance script is not allowed to run in production directly.');
+  process.exit(1);
+}
+
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 

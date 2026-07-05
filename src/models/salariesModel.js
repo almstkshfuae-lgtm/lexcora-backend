@@ -51,9 +51,12 @@ const getSalaryById = async (id) => {
       e.job_id as employee_number,
       e.iban,
       e.bank_name,
-      e.account_number
+      e.account_number,
+      d.name_ar as department_ar,
+      d.name_en as department_en
     FROM salaries s
     LEFT JOIN employees e ON s.employee_id = e.id
+    LEFT JOIN departments d ON e.department_id = d.id
     WHERE s.id = ?
   `, [id]);
   return rows[0];
@@ -116,6 +119,19 @@ const updateSalary = async (id, salaryData) => {
       // Normalize pay_period from YYYY-MM to YYYY-MM-01
       if (key === 'pay_period' && typeof val === 'string' && /^\d{4}-\d{2}$/.test(val)) {
         val = `${val}-01`;
+      }
+      // Normalize payment_date to YYYY-MM-DD
+      if (key === 'payment_date' && val) {
+        if (typeof val === 'string' && val.includes('T')) {
+          val = val.split('T')[0];
+        } else if (val instanceof Date) {
+          const year = val.getFullYear();
+          let month = '' + (val.getMonth() + 1);
+          let day = '' + val.getDate();
+          if (month.length < 2) month = '0' + month;
+          if (day.length < 2) day = '0' + day;
+          val = [year, month, day].join('-');
+        }
       }
       params.push(val);
     }

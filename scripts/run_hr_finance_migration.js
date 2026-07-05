@@ -2,6 +2,13 @@
  * HR → Finance Integration Migration
  * Safe for all MySQL versions (no IF NOT EXISTS on ALTER TABLE)
  */
+
+// Production safety guard
+if (process.env.NODE_ENV === 'production' && !process.env.FORCE_PRODUCTION_MIGRATION) {
+  console.error('CRITICAL: This migration/maintenance script is not allowed to run in production directly.');
+  process.exit(1);
+}
+
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 

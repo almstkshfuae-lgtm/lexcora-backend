@@ -53,7 +53,7 @@ const PERMISSIONS = {
     delete: 'Delete Memo',
   },
   parties: {
-    list: 'View Parties',
+    list: 'View Party',
     view: 'View Party',
     create: 'Add Party',
     update: 'Edit Party',
@@ -67,7 +67,7 @@ const PERMISSIONS = {
     delete: 'Delete Party Order',
   },
   sessions: {
-    list: 'View Sessions',
+    list: 'View Session',
     create: 'Add Session',
     update: 'Edit Session',
     delete: 'Delete Session',

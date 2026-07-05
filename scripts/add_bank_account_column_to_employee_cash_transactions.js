@@ -1,4 +1,11 @@
-const db = require('./src/config/db');
+
+// Production safety guard
+if (process.env.NODE_ENV === 'production' && !process.env.FORCE_PRODUCTION_MIGRATION) {
+  console.error('CRITICAL: This migration/maintenance script is not allowed to run in production directly.');
+  process.exit(1);
+}
+
+const db = require('../src/config/db');
 
 const addBankAccountColumn = async () => {
   try {

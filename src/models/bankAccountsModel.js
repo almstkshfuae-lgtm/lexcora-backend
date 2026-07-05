@@ -60,22 +60,76 @@ const createBankAccount = async (bankAccount) => {
     account_number, 
     iban, 
     branch_id, 
-    current_balance = 0, 
+    current_balance, 
+    initial_balance,
     status = 'active',
     created_by 
   } = bankAccount;
+
+  const balance = parseFloat(current_balance !== undefined ? current_balance : (initial_balance !== undefined ? initial_balance : 0)) || 0;
   
+  const connection = await db.getConnection();
   try {
-    const [result] = await db.query(`
+    await connection.beginTransaction();
+    
+    const [result] = await connection.query(`
       INSERT INTO bank_accounts 
       (bank_name, account_name, account_number, iban, branch_id, current_balance, status, created_by, created_at) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
-    `, [bank_name, account_name, account_number, iban, branch_id, current_balance, status, created_by]);
+    `, [bank_name, account_name, account_number, iban, branch_id, balance, status, created_by]);
     
-    return { success: true, insertId: result.insertId };
+    const insertId = result.insertId;
+    
+    if (balance > 0) {
+      // 1. Create bank account log entry (for cash flow report)
+      await connection.query(`
+        INSERT INTO bank_account_logs 
+        (bank_account_id, type, amount, description, created_by, created_at) 
+        VALUES (?, 'deposit', ?, ?, ?, NOW())
+      `, [insertId, balance, `الرصيد الافتتاحي - ${account_name} / Opening Balance - ${account_name}`, created_by]);
+      
+      // 2. Create journal entry for accounting ledger (for reports)
+      const { createJournalEntry } = require("./journalEntriesModel");
+      
+      const entryData = {
+        entry_date: new Date(),
+        reference_number: `OP-BANK-${insertId}`,
+        description: `الرصيد الافتتاحي - ${account_name} / Opening Balance - ${account_name}`,
+        currency_code: 'AED',
+        exchange_rate: 1.0,
+        status: 'posted',
+        created_by: created_by,
+        branch_id: branch_id
+      };
+      
+      const items = [
+        {
+          account_id: 4, // Bank Accounts (Asset)
+          description: `الرصيد الافتتاحي - ${account_name} / Opening Balance - ${account_name}`,
+          debit: balance,
+          credit: 0,
+          branch_id
+        },
+        {
+          account_id: 10, // Capital (Equity)
+          description: `الرصيد الافتتاحي - ${account_name} / Opening Balance - ${account_name}`,
+          debit: 0,
+          credit: balance,
+          branch_id
+        }
+      ];
+      
+      await createJournalEntry(entryData, items, connection);
+    }
+    
+    await connection.commit();
+    return { success: true, insertId: insertId, data: { id: insertId } };
   } catch (error) {
+    await connection.rollback();
     console.error("Error inserting bank account:", error);
     return { success: false, message: error.message };
+  } finally {
+    connection.release();
   }
 };
 
