@@ -5,7 +5,7 @@ const express = require("express");
 const request = require("supertest");
 
 const routePath = path.resolve(__dirname, "../src/routes/bankingRoutes.js");
-const authPath = path.resolve(__dirname, "../src/middliewares/authMiddleware.js");
+const authPath = path.resolve(__dirname, "../src/middlewares/authMiddleware.js");
 const uploadPath = path.resolve(__dirname, "../src/controllers/uploadController.js");
 const controllerPath = path.resolve(__dirname, "../src/controllers/bankController.js");
 
