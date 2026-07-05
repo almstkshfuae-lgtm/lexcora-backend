@@ -16,7 +16,7 @@ The backend serves as the core logic handler and data source for the entire Lexc
 - **Database:** Migrated from AWS RDS to Railway MySQL. A massive database dump of 79 complex relational tables has been successfully restored.
 
 ### Vercel Serverless Optimizations
-- The entire API runs efficiently via `vercel.json` routing configuration routing all requests (`/(.*)`) through a single entry point (`index.js`).
+- The entire API runs efficiently via `vercel.json` routing configuration routing all requests (`/(.*)`) through a single entry point (`api/index.js`).
 - State is entirely stateless between requests, conforming strictly to serverless best practices (e.g., no local disk caching).
 
 ---

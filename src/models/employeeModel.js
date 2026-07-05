@@ -1,4 +1,3 @@
-const e = require("express");
 const db = require("../config/db");
 const { generateCredentials } = require("../utils/generateCredentials");
 const { hashPassword } = require("../utils/passwordUtils");
@@ -188,8 +187,8 @@ const createEmployee = async (employee) => {
       name, username, password, role_id, job_id, email, eId, passport, phone, department_id, direct_manager_id,
     residence_end_date, id_end_date, passport_end_date, labor_card_end_date,
       health_insurance_end_date, contract_end_date, basic_salary, branch_id, status,
-      account_close_date, another_allownce, account_activation_date, fisrt_day_of_work,
-      housing_allowance, trnsportation_allownce, pay_type, iban, account_number, bank_name, contract_type,
+      account_close_date, another_allowance, account_activation_date, first_day_of_work,
+      housing_allowance, transportation_allowance, pay_type, iban, account_number, bank_name, contract_type,
       registration_expiration_date, hourly_rate
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
@@ -300,7 +299,7 @@ const updateEmployee = async (id, employee) => {
   const finalLaborCardEndDate = workPermitExpiryDate || laborCardEndDate;
   const finalHealthInsuranceEndDate = insuranceExpiryDate || healthInsuranceEndDate;
   const finalContractEndDate = contractExpiryDate || contractEndDate;
-  const finalRegistrationExpirationDate = registrationExpiryDate || registrationExpirationDate;
+  const finalRegistrationExpirationDate = registrationExpiryDate || employee.registrationExpirationDate;
 
   // Build the query dynamically to include password only if it's not masked
   let query = `UPDATE employees SET
@@ -309,8 +308,8 @@ const updateEmployee = async (id, employee) => {
     direct_manager_id = ?, status = ?, residence_end_date = ?, id_end_date = ?,
     passport_end_date = ?, labor_card_end_date = ?, health_insurance_end_date = ?,
     contract_end_date = ?, basic_salary = ?,
-    account_close_date = ?, another_allownce = ?, account_activation_date = ?,
-    fisrt_day_of_work = ?, housing_allowance = ?, trnsportation_allownce = ?,
+    account_close_date = ?, another_allowance = ?, account_activation_date = ?,
+    first_day_of_work = ?, housing_allowance = ?, transportation_allowance = ?,
     pay_type = ?, iban = ?, account_number = ?, bank_name = ?, contract_type = ?,
     registration_expiration_date = ?, hourly_rate = ?`;
 
@@ -352,7 +351,8 @@ const updateEmployee = async (id, employee) => {
   // Only update password if it's provided and not masked
   if (password && password !== '********') {
     const hashedPwd = await hashPassword(password);
-    query = query.replace('registration_expiration_date = ?, hourly_rate = ?', 'registration_expiration_date = ?, hourly_rate = ?, password = ?');
+    // Append password field to the SET clause (before WHERE)
+    query = query + ', password = ?';
     params.push(hashedPwd);
   }
 

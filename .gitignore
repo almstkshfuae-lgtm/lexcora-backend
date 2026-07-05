@@ -91,3 +91,12 @@ public
 .vscode/
 .vercel
 .env*.local
+
+# Temporary and debug files — never commit these
+git-error-*.txt
+lint_results.txt
+test_results.txt
+*_tmp.js
+
+# Scratch scripts (local dev helpers only)
+scratch/

@@ -1,5 +1,5 @@
-require("dotenv").config();
-const app = require("./src/app");
+﻿require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
+const app = require("../src/app");
 
 // Global exception handling for serverless/production stability
 process.on('unhandledRejection', (reason, promise) => {
@@ -26,4 +26,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-
