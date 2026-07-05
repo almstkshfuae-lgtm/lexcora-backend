@@ -28,8 +28,9 @@ const getEmployee = async (id) => {
  */
 const getEmployeeSanitized = async (id) => {
   const employee = await getEmployee(id);
-  const { password, ...rest } = employee;
-  return { ...rest, password: '********' };
+  const rest = { ...employee };
+  rest.password = '********';
+  return rest;
 };
 
 const sanitizeEmployeeInput = (data = {}) => {
@@ -87,11 +88,9 @@ const addEmployee = async (data, createdBy = null) => {
 const addEmployeeWithFetch = async (data, createdBy = null) => {
   const { userId, plainPassword } = await addEmployee(data, createdBy);
   const employee = await getEmployee(userId);
-  const { password, ...rest } = employee;
-  return {
-    ...rest,
-    password: plainPassword || '********'
-  };
+  const rest = { ...employee };
+  rest.password = plainPassword || '********';
+  return rest;
 };
 
 const mapDbEmployeeToFrontend = (dbEmp) => {
@@ -203,8 +202,7 @@ const updateEmployee = async (id, data, updatedBy = null) => {
   // Merge with existing data mapped to camelCase frontend variables
   const mappedExisting = mapDbEmployeeToFrontend(existingEmployee);
   const updatedData = { ...mappedExisting, ...payload };
-  
-  const success = await employeeModel.updateEmployee(id, updatedData);
+  const { success, plainPassword } = await employeeModel.updateEmployee(id, updatedData);
   if (!success) {
     throw new Error("Failed to update employee");
   }
@@ -221,9 +219,12 @@ const updateEmployee = async (id, data, updatedBy = null) => {
   
   const updatedEmployee = await employeeModel.getEmployeeById(id);
   if (updatedEmployee) {
-    updatedEmployee.password = '********';
+    updatedEmployee.password = plainPassword || '********';
   }
-  return updatedEmployee;
+  return {
+    ...updatedEmployee,
+    plainPassword
+  };
 };
 
 const removeEmployee = async (id, deletedBy = null) => {

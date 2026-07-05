@@ -132,6 +132,18 @@ Due to the Vercel migration, local disk writing (e.g., via `fs` or traditional `
   - **Conflict Prevention:** Added check and user-friendly error response (400) if the username is already registered to another client.
 - **Technical Detail:** Modified `partiesModel.js` (`createParty`, `updateParty`) and `partiesController.js` to catch `USERNAME_ALREADY_EXISTS`. Added translation keys to `messages.js`.
 
+### Dependency Security Remediation (July 2026)
+- **Problem:** Detected 25 high/medium security vulnerabilities in dependencies such as `multer`, `axios`, `xlsx` (SheetJS), `nodemailer`, `form-data`, `undici`, `tmp`, etc., which could expose the application to denial of service, prototype pollution, arbitrary file read, and CRLF injections.
+- **Solution:** Upgraded direct dependencies to patched versions and configured strict npm overrides for transitive dependencies.
+- **Key Changes:**
+  - **Multer:** Upgraded from `^1.4.5-lts.1` to `^2.2.0` to address multiple denial of service vulnerabilities (resource exhaustion, unhandled exceptions, deeply nested field names).
+  - **Nodemailer:** Upgraded from `^8.0.7` to `^9.0.3` to secure mail transport from arbitrary file reads and SSRF.
+  - **XLSX (SheetJS):** Migrated from npm package `xlsx` (v0.18.5) to the official SheetJS CDN release (`https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz`) to fix prototype pollution and ReDoS issues.
+  - **UUID:** Upgraded from `^9.0.1` to `^11.1.1` to fix buffer bounds check bugs.
+  - **Stale Dependencies:** Removed the deprecated `aws-sdk` (v2) package, since storage functions are already successfully migrated to `@aws-sdk/client-s3` (v3).
+  - **Transitive Overrides:** Added `overrides` block in `package.json` to secure transitive dependencies: `axios` (`^1.18.1`), `form-data` (`^4.0.6`), `tmp` (`^0.2.7`), `ws` (`^8.21.0`), `qs` (`^6.15.3`), `js-yaml` (`^4.3.0`), `@grpc/grpc-js` (`^1.14.4`), `@babel/core` (`^7.29.7`), `undici` (`^6.27.0` / `^7.28.0`), and `protobufjs` (`^7.6.5` / `^8.6.6`).
+- **Result:** Completed verification via `npm audit` which now reports exactly **0 vulnerabilities**. Ran all unit/integration tests successfully with no regressions.
+
 ## 7. Ongoing Tasks
 - Completed endpoint validation pass for Express on serverless: confirmed app startup, route registration, and production-safe behavior for Vercel deployment.
 - Disabled local `/uploads` static serving in production so file access is handled exclusively through Vercel Blob.
