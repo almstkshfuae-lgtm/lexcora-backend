@@ -165,6 +165,11 @@ Due to the Vercel migration, local disk writing (e.g., via `fs` or traditional `
 - **Problem:** Non-admin employees with "all permissions" assigned encountered a `403 Forbidden` error when trying to fetch the employee list (e.g., on meeting creation, tasks assignment, and HR requests). This occurred because core employee management permissions (`View Employee`, `Add Employee`, `Edit Employee`, `Delete Employee`, `View Employee Account Statement`) and payroll permissions (`View Payroll`, `Process Payroll`, `Pay Salary`) were missing from the database's `permissions` table, causing the `checkPermission` middleware to reject access for non-admins.
 - **Solution:** Created and executed a database migration/seeding script to insert these 8 core permissions into the live `permissions` table and automatically assign them to existing non-admin employees who have permissions active.
 
+### Local Development Environment Storage Fix (July 2026)
+- **Problem**: When uploading files locally, the storage API returned a 500 Internal Server Error because the `@vercel/blob` storage client could not find the read-write token (`BLOB_READ_WRITE_TOKEN`). Vercel CLI stores local environment variables in `.env.local`, but the Express backend entrypoint was hardcoded to only load `.env`.
+- **Solution**: Modified `api/index.js` to load `.env.local` first and fall back to `.env`. This ensures all local Vercel credentials are successfully injected into the process environment during development.
+
+
 ## 7. Ongoing Tasks
 - Completed endpoint validation pass for Express on serverless: confirmed app startup, route registration, and production-safe behavior for Vercel deployment.
 - Disabled local `/uploads` static serving in production so file access is handled exclusively through Vercel Blob.

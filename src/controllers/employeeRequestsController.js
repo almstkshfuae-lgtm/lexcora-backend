@@ -126,9 +126,15 @@ const createEmployeeRequest = async (req, res) => {
 const updateEmployeeRequest = async (req, res) => {
   try {
     const { id } = req.params;
-    const { date, type, from_date, to_date, reason, notes } = req.body;
+    let { date, type, from_date, to_date, reason, notes } = req.body;
     if (!date || !type)
       return res.status(400).json({ success: false, message: "date and type are required" });
+
+    // Format date cleanly to YYYY-MM-DD to avoid SQL format errors with full ISO timestamps
+    const dateObj = new Date(date);
+    if (!isNaN(dateObj.getTime())) {
+      date = dateObj.toISOString().split('T')[0];
+    }
 
     const existing = await employeeRequestsModel.getEmployeeRequestById(id);
     if (!existing) return res.status(404).json({ success: false, message: "Employee request not found" });
