@@ -260,7 +260,7 @@ const getBudgetVsActual = async (req, res) => {
 
 const getBudgets = async (req, res) => {
   try {
-    const result = await budgetsModel.getAllBudgets(req.query);
+    const result = await budgetsModel.getBudgets(req.query);
     res.list(result);
   } catch (error) {
     console.error('[GET_BUDGETS_ERROR]', { message: error.message, stack: error.stack, query: req.query });
