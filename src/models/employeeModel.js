@@ -1,4 +1,3 @@
-const e = require("express");
 const db = require("../config/db");
 const { generateCredentials } = require("../utils/generateCredentials");
 const { hashPassword } = require("../utils/passwordUtils");
@@ -300,7 +299,7 @@ const updateEmployee = async (id, employee) => {
   const finalLaborCardEndDate = workPermitExpiryDate || laborCardEndDate;
   const finalHealthInsuranceEndDate = insuranceExpiryDate || healthInsuranceEndDate;
   const finalContractEndDate = contractExpiryDate || contractEndDate;
-  const finalRegistrationExpirationDate = registrationExpiryDate || registrationExpirationDate;
+  const finalRegistrationExpirationDate = registrationExpiryDate || employee.registrationExpirationDate;
 
   // Build the query dynamically to include password only if it's not masked
   let query = `UPDATE employees SET
@@ -352,7 +351,8 @@ const updateEmployee = async (id, employee) => {
   // Only update password if it's provided and not masked
   if (password && password !== '********') {
     const hashedPwd = await hashPassword(password);
-    query = query.replace('registration_expiration_date = ?, hourly_rate = ?', 'registration_expiration_date = ?, hourly_rate = ?, password = ?');
+    // Append password field to the SET clause (before WHERE)
+    query = query + ', password = ?';
     params.push(hashedPwd);
   }
 

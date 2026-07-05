@@ -9,6 +9,7 @@ const { responseMiddleware } = require("./middlewares/responseMiddleware");
 const { errorHandler } = require("./middlewares/errorHandler");
 const { i18nMiddleware } = require("./middlewares/i18nMiddleware");
 const { requestLogger } = require("./middlewares/requestLogger");
+const { securityMiddleware } = require("./middlewares/securityMiddleware");
 const { checkDb, checkBlob, getVersionInfo } = require("./utils/healthChecks");
 
 // Import routes
@@ -224,6 +225,7 @@ const corsOptions = {
   preflightContinue: false
 };
 
+app.use(securityMiddleware); // Block scanner probes — must be FIRST
 app.use(cors(corsOptions));
 app.use(cookieParser('law-backend-cookie-secret-for-session-security-2024')); // COOKIE_SECRET
 app.use(express.json({ limit: '50mb' })); // Increase limit for file uploads
