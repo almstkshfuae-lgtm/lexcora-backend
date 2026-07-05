@@ -4,6 +4,10 @@
 const express = require('express');
 const router = express.Router();
 const departmentsController = require('../controllers/departmentsController');
+const { authenticateToken } = require('../middlewares/authMiddleware');
+
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
 
 // Get all departments
 router.get('/', departmentsController.getAllDepartments);

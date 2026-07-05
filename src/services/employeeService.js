@@ -26,9 +26,8 @@ const getEmployee = async (id) => {
 /**
  * Convenience helper that masks password when requested.
  */
-const getEmployeeSanitized = async (id, { maskPassword = true } = {}) => {
+const getEmployeeSanitized = async (id) => {
   const employee = await getEmployee(id);
-  if (!maskPassword) return employee;
   const { password, ...rest } = employee;
   return { ...rest, password: '********' };
 };
@@ -60,7 +59,9 @@ try {
       throw new Error('Employee with same name, phone, or email already exists');
     }
     
-    const userId = await employeeModel.createEmployee(payload);
+    const createResult = await employeeModel.createEmployee(payload);
+    const userId = typeof createResult === 'object' ? createResult.insertId : createResult;
+    const plainPassword = typeof createResult === 'object' ? createResult.plainPassword : null;
     
     if (payload.permissions && payload.permissions.length > 0 && userId) {
       for (const permId of payload.permissions) {
@@ -78,7 +79,7 @@ try {
       );
     }
     
-    return userId;
+    return { userId, plainPassword };
   } catch (error) {
     console.error("Error adding employee:", error);
     throw new Error("Failed to add employee");
@@ -87,8 +88,53 @@ try {
 };
 
 const addEmployeeWithFetch = async (data, createdBy = null) => {
-  const userId = await addEmployee(data, createdBy);
-  return await getEmployee(userId);
+  const { userId, plainPassword } = await addEmployee(data, createdBy);
+  const employee = await getEmployee(userId);
+  const { password, ...rest } = employee;
+  return {
+    ...rest,
+    password: plainPassword || '********'
+  };
+};
+
+const mapDbEmployeeToFrontend = (dbEmp) => {
+  if (!dbEmp) return {};
+  return {
+    ...dbEmp,
+    password: '********',
+    roleId: dbEmp.role_id,
+    employeeNumber: dbEmp.job_id,
+    identityNumber: dbEmp.eId,
+    passportNumber: dbEmp.passport,
+    phoneNumber: dbEmp.phone,
+    departmentId: dbEmp.department_id,
+    branchId: dbEmp.branch_id,
+    directManagerId: dbEmp.direct_manager_id,
+    residenceExpiryDate: dbEmp.residence_end_date,
+    residenceEndDate: dbEmp.residence_end_date,
+    identityExpiryDate: dbEmp.id_end_date,
+    idEndDate: dbEmp.id_end_date,
+    passportExpiryDate: dbEmp.passport_end_date,
+    passportEndDate: dbEmp.passport_end_date,
+    workPermitExpiryDate: dbEmp.labor_card_end_date,
+    laborCardEndDate: dbEmp.labor_card_end_date,
+    insuranceExpiryDate: dbEmp.health_insurance_end_date,
+    healthInsuranceEndDate: dbEmp.health_insurance_end_date,
+    contractExpiryDate: dbEmp.contract_end_date,
+    contractEndDate: dbEmp.contract_end_date,
+    basicSalary: dbEmp.basic_salary,
+    anotherAllowance: dbEmp.another_allownce,
+    housingAllowance: dbEmp.housing_allowance,
+    transportationAllowance: dbEmp.trnsportation_allownce,
+    firstDayOfWork: dbEmp.fisrt_day_of_work,
+    payType: dbEmp.pay_type,
+    accountNumber: dbEmp.account_number,
+    bankName: dbEmp.bank_name,
+    contractType: dbEmp.contract_type,
+    registrationExpiryDate: dbEmp.registration_expiration_date,
+    registrationExpirationDate: dbEmp.registration_expiration_date,
+    hourlyRate: dbEmp.hourly_rate
+  };
 };
 
 const updateEmployee = async (id, data, updatedBy = null) => {
@@ -104,17 +150,20 @@ const updateEmployee = async (id, data, updatedBy = null) => {
     throw new Error("Status must be either 'active' or 'inactive'");
   }
 
-  // Validate email format (if provided)
-  if (payload.email) {
+  // Validate email format (if provided and changed)
+  if (payload.email && payload.email !== existingEmployee.email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(payload.email)) {
       throw new Error("Invalid email format");
     }
   }
 
-  // Validate phone format (if provided)
-  if (payload.phone && !/^[0-9+\-\s()]+$/.test(payload.phone)) {
-    throw new Error("Invalid phone format");
+  // Validate phone format (if provided and changed)
+  const finalPhone = payload.phone || payload.phoneNumber;
+  if (finalPhone && finalPhone !== existingEmployee.phone) {
+    if (!/^[0-9+\-\s()]+$/.test(finalPhone)) {
+      throw new Error("Invalid phone format");
+    }
   }
 
   // Duplicate check (exclude current ID)
@@ -154,9 +203,9 @@ const updateEmployee = async (id, data, updatedBy = null) => {
   if (payload.deductions && !Array.isArray(payload.deductions)) {
     throw new Error("Deductions must be an array");
   }
-
-  // Merge with existing data
-  const updatedData = { ...existingEmployee, ...payload };
+  // Merge with existing data mapped to camelCase frontend variables
+  const mappedExisting = mapDbEmployeeToFrontend(existingEmployee);
+  const updatedData = { ...mappedExisting, ...payload };
   
   const success = await employeeModel.updateEmployee(id, updatedData);
   if (!success) {
@@ -173,7 +222,11 @@ const updateEmployee = async (id, data, updatedBy = null) => {
     );
   }
   
-  return await employeeModel.getEmployeeById(id);
+  const updatedEmployee = await employeeModel.getEmployeeById(id);
+  if (updatedEmployee) {
+    updatedEmployee.password = '********';
+  }
+  return updatedEmployee;
 };
 
 const removeEmployee = async (id, deletedBy = null) => {

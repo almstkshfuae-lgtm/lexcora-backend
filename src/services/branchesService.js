@@ -43,7 +43,8 @@ const deleteBranch = async (id, deletedBy = null) => {
   let branch = null;
   if (deletedBy) {
     try {
-      const branches = await branchesModel.getAllBranches();
+      const branchesResult = await branchesModel.getAllBranches();
+      const branches = branchesResult.data || [];
       branch = branches.find(b => b.id === parseInt(id));
     } catch (error) {
       console.error('Error getting branch:', error);

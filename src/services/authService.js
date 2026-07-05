@@ -77,7 +77,8 @@ const registerUser = async (userData) => {
     };
 
     // Create employee in database
-    const employeeId = await createEmployee(newEmployeeData);
+    const createResult = await createEmployee(newEmployeeData);
+    const employeeId = typeof createResult === 'object' ? createResult.insertId : createResult;
 
     return {
       success: true,

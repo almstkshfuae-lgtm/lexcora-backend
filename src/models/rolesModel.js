@@ -83,7 +83,7 @@ const updateRole = async (id, role) => {
 const deleteRole = async (id) => {
   // First check if role is being used by any users
   const [userRows] = await db.query(
-    `SELECT COUNT(*) as count FROM users WHERE role_id = ?`,
+    `SELECT COUNT(*) as count FROM employees WHERE role_id = ?`,
     [id]
   );
   
@@ -119,7 +119,7 @@ const getRolesUsageCount = async () => {
       r.role_en,
       COUNT(u.id) as user_count
     FROM roles r
-    LEFT JOIN users u ON r.id = u.role_id
+    LEFT JOIN employees u ON r.id = u.role_id
     GROUP BY r.id, r.role_ar, r.role_en
     ORDER BY r.id ASC
   `);

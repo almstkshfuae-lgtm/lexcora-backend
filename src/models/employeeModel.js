@@ -160,11 +160,13 @@ const createEmployee = async (employee) => {
 
   // Use provided password or generate a new one
   let password;
+  let plainPassword = null;
   if (employee.password && employee.password !== '********') {
-    password = await hashPassword(employee.password);
+    plainPassword = employee.password;
+    password = await hashPassword(plainPassword);
   } else {
     const credentials = await generateCredentials();
-    const plainPassword = credentials.password;
+    plainPassword = credentials.password;
     password = await hashPassword(plainPassword);
   }
 
@@ -213,7 +215,7 @@ const createEmployee = async (employee) => {
     hourlyRate || 0
   ]);
 
-  return result.insertId;
+  return { insertId: result.insertId, plainPassword };
 };
 
 const updateEmployee = async (id, employee) => {
@@ -337,7 +339,7 @@ const updateEmployee = async (id, employee) => {
   // Only update password if it's provided and not masked
   if (password && password !== '********') {
     const hashedPwd = await hashPassword(password);
-    query = query.replace('registration_expiration_date = ?', 'registration_expiration_date = ?, password = ?');
+    query = query.replace('registration_expiration_date = ?, hourly_rate = ?', 'registration_expiration_date = ?, hourly_rate = ?, password = ?');
     params.push(hashedPwd);
   }
 

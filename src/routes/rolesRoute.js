@@ -9,7 +9,7 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Get all roles
-router.get("/", checkPermission('view_roles'), rolesController.getAllRoles);
+router.get("/", rolesController.getAllRoles);
 
 // Get roles with usage count
 router.get("/usage", checkPermission('view_roles'), rolesController.getRolesWithUsage);

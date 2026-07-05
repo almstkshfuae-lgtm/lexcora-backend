@@ -23,8 +23,7 @@ const getEmployees = async (req, res) => {
 const getEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const isAdmin = req.user && (req.user.role_en === 'admin');
-    const employee = await employeeService.getEmployeeSanitized(id, { maskPassword: !isAdmin });
+    const employee = await employeeService.getEmployeeSanitized(id);
     res.success(employee, req.t('generic.ok'));
   } catch (err) {
     console.error('[GET_EMPLOYEE_ERROR]', {
