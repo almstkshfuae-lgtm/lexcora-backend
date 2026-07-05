@@ -42,52 +42,56 @@ const sanitizeEmployeeInput = (data = {}) => {
 };
 
 const addEmployee = async (data, createdBy = null) => {
-  try {
-    const payload = sanitizeEmployeeInput(data);
+  const payload = sanitizeEmployeeInput(data);
 
-    // Validate status field (if provided)
-    if (payload.status && !['active', 'inactive'].includes(payload.status)) {
-      throw new Error("Status must be either 'active' or 'inactive'");
-    }
-
-    // Support both phone and phoneNumber field names from frontend
-    const phoneForDuplicateCheck = payload.phoneNumber || payload.phone || null;
-
-    // Duplicate check - only check fields that are actually provided
-    const duplicate = await employeeModel.checkDuplicateEmployee(
-      payload.name,
-      phoneForDuplicateCheck,
-      payload.email
-    );
-    if (duplicate) {
-      throw new Error('Employee with same name, phone, or email already exists');
-    }
-
-    const createResult = await employeeModel.createEmployee(payload);
-    const userId = typeof createResult === 'object' ? createResult.insertId : createResult;
-    const plainPassword = typeof createResult === 'object' ? createResult.plainPassword : null;
-
-    if (payload.permissions && payload.permissions.length > 0 && userId) {
-      for (const permId of payload.permissions) {
-        await permissionsModel.addEmployeePermission(userId, permId);
-      }
-    }
-
-    // Log employee creation
-    if (createdBy) {
-      await logAdd(
-        createdBy,
-        'موظف',
-        data.name || data.username || 'موظف جديد',
-        userId
-      );
-    }
-
-    return { userId, plainPassword };
-  } catch (error) {
-    console.error("خطأ في إضافة الموظف:", error);
-    throw new Error(`Failed to add employee: ${error.message}`);
+  // Validate status field (if provided)
+  if (payload.status && !['active', 'inactive'].includes(payload.status)) {
+    throw new Error("Status must be either 'active' or 'inactive'");
   }
+
+  // Support both phone and phoneNumber field names from frontend
+  const phoneForDuplicateCheck = payload.phoneNumber || payload.phone || null;
+
+  // Duplicate check - only check fields that are actually provided
+  const duplicate = await employeeModel.checkDuplicateEmployee({
+    name: payload.name,
+    phone: phoneForDuplicateCheck,
+    email: payload.email,
+    username: payload.username,
+    employeeNumber: payload.employeeNumber || payload.job_id
+  });
+  if (duplicate) {
+    let field = 'data';
+    let fieldAr = 'البيانات';
+    if (duplicate.name === payload.name) { field = 'name'; fieldAr = 'الاسم'; }
+    else if (duplicate.phone === phoneForDuplicateCheck) { field = 'phone number'; fieldAr = 'رقم الهاتف'; }
+    else if (duplicate.email === payload.email) { field = 'email'; fieldAr = 'البريد الإلكتروني'; }
+    else if (duplicate.username === payload.username) { field = 'username'; fieldAr = 'اسم المستخدم'; }
+    else if (duplicate.job_id === (payload.employeeNumber || payload.job_id)) { field = 'employee number'; fieldAr = 'رقم الموظف'; }
+    throw new Error(`Employee with same ${field} already exists`);
+  }
+
+  const createResult = await employeeModel.createEmployee(payload);
+  const userId = typeof createResult === 'object' ? createResult.insertId : createResult;
+  const plainPassword = typeof createResult === 'object' ? createResult.plainPassword : null;
+
+  if (payload.permissions && payload.permissions.length > 0 && userId) {
+    for (const permId of payload.permissions) {
+      await permissionsModel.addEmployeePermission(userId, permId);
+    }
+  }
+
+  // Log employee creation
+  if (createdBy) {
+    await logAdd(
+      createdBy,
+      'موظف',
+      data.name || data.username || 'موظف جديد',
+      userId
+    );
+  }
+
+  return { userId, plainPassword };
 };
 
 const addEmployeeWithFetch = async (data, createdBy = null) => {
@@ -168,14 +172,22 @@ const updateEmployee = async (id, data, updatedBy = null) => {
   }
 
   // Duplicate check (exclude current ID)
-  const duplicate = await employeeModel.checkDuplicateEmployee(
-    payload.name,
-    payload.phone,
-    payload.email,
-    id
-  );
+  const duplicate = await employeeModel.checkDuplicateEmployee({
+    name: payload.name,
+    phone: payload.phone || payload.phoneNumber,
+    email: payload.email,
+    username: payload.username,
+    employeeNumber: payload.employeeNumber || payload.job_id,
+    excludeId: id
+  });
   if (duplicate) {
-    throw new Error('Employee with same name, phone, or email already exists');
+    let field = 'data';
+    if (duplicate.name === payload.name) field = 'name';
+    else if (duplicate.phone === (payload.phone || payload.phoneNumber)) field = 'phone number';
+    else if (duplicate.email === payload.email) field = 'email';
+    else if (duplicate.username === payload.username) field = 'username';
+    else if (duplicate.job_id === (payload.employeeNumber || payload.job_id)) field = 'employee number';
+    throw new Error(`Employee with same ${field} already exists`);
   }
 
   // Validate dates (if provided)
@@ -272,8 +284,18 @@ const getEmployeeAccountStatement = async (employeeId, fromDate, toDate) => {
   return await employeeModel.getEmployeeAccountStatement(employeeId, fromDate, toDate);
 };
 
-const checkDuplicateEmployee = async (name, phone, email, excludeId = null) => {
-  return await employeeModel.checkDuplicateEmployee(name, phone, email, excludeId);
+const checkDuplicateEmployee = async (nameOrObj, phone, email, username = null, employeeNumber = null, excludeId = null) => {
+  if (nameOrObj && typeof nameOrObj === 'object') {
+    return await employeeModel.checkDuplicateEmployee(nameOrObj);
+  }
+  return await employeeModel.checkDuplicateEmployee({
+    name: nameOrObj,
+    phone,
+    email,
+    username,
+    employeeNumber,
+    excludeId
+  });
 };
 
 const getAdminEmployees = async () => {

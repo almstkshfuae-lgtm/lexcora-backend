@@ -16,7 +16,7 @@ router.get('/check-duplicate', authenticateToken, partiesController.checkDuplica
 router.get('/search', authenticateToken, partiesController.searchParties);
 
 // Get potential clients (parties that are not client or opponent)
-router.get('/potential-clients', authenticateToken, checkPermission('View Parties'), partiesController.getPotentialClients);
+router.get('/potential-clients', authenticateToken, checkPermission('View Party'), partiesController.getPotentialClients);
 
 // Get finance clients (parties where party_type != 'opponent')
 router.get('/finance-clients', authenticateToken, partiesController.getClientsForFinance);
