@@ -22,9 +22,13 @@ const getAllSalaries = async (filters = {}) => {
   }
   if (payPeriod) {
     query += " AND s.pay_period = ?";
-    params.push(payPeriod);
+    if (/^\d{4}-\d{2}$/.test(payPeriod)) {
+      params.push(`${payPeriod}-01`);
+    } else {
+      params.push(payPeriod);
+    }
   }
-  if (status) {
+  if (status && status.trim() !== '') {
     query += " AND s.status = ?";
     params.push(status);
   }
@@ -76,6 +80,12 @@ const createSalary = async (salaryData) => {
     notes = ''
   } = salaryData;
 
+  // Normalize pay_period from YYYY-MM to YYYY-MM-01
+  let finalPayPeriod = pay_period;
+  if (typeof finalPayPeriod === 'string' && /^\d{4}-\d{2}$/.test(finalPayPeriod)) {
+    finalPayPeriod = `${finalPayPeriod}-01`;
+  }
+
   const [result] = await db.query(`
     INSERT INTO salaries (
       employee_id, base_salary, allowances, deductions, 
@@ -89,7 +99,7 @@ const createSalary = async (salaryData) => {
     incentives, bonuses, eos_amount,
     housing_allowance, transportation_allowance, other_allowance,
     overtime_hours, overtime_rate, overtime_amount,
-    net_salary, pay_period, status, notes
+    net_salary, finalPayPeriod, status, notes
   ]);
 
   return result.insertId;
@@ -102,7 +112,12 @@ const updateSalary = async (id, salaryData) => {
   Object.keys(salaryData).forEach(key => {
     if (key !== 'id' && key !== 'created_at' && key !== 'updated_at') {
       fields.push(`${key} = ?`);
-      params.push(salaryData[key]);
+      let val = salaryData[key];
+      // Normalize pay_period from YYYY-MM to YYYY-MM-01
+      if (key === 'pay_period' && typeof val === 'string' && /^\d{4}-\d{2}$/.test(val)) {
+        val = `${val}-01`;
+      }
+      params.push(val);
     }
   });
 

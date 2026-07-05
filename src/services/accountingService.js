@@ -619,6 +619,15 @@ module.exports = {
   getVatReturn: async (filters = {}) => {
     const { start_date, end_date, branch_id } = filters;
     
+    // Default dates to a wide range if not provided to prevent parameter mismatch crashes
+    const startDate = start_date || '1970-01-01';
+    const endDate = end_date || '9999-12-31';
+
+    const params = [startDate, endDate];
+    if (branch_id) {
+      params.push(branch_id);
+    }
+
     // Aggregation for Output Tax (Standard Rated Supplies)
     const [outputRows] = await db.query(`
       SELECT 
@@ -632,7 +641,7 @@ module.exports = {
       ${branch_id ? 'AND i.branch_id = ?' : ''}
       AND i.status = 'approved'
       GROUP BY b.id
-    `, [start_date, end_date, branch_id].filter(Boolean));
+    `, params);
 
     // Aggregation for Input Tax (Standard Rated Expenses)
     const [inputRows] = await db.query(`
@@ -644,7 +653,7 @@ module.exports = {
       AND bill_date BETWEEN ? AND ?
       ${branch_id ? 'AND branch_id = ?' : ''}
       AND status = 'approved'
-    `, [start_date, end_date, branch_id].filter(Boolean));
+    `, params);
 
     // Other categories for Output
     const [otherRows] = await db.query(`
@@ -657,7 +666,7 @@ module.exports = {
       ${branch_id ? 'AND branch_id = ?' : ''}
       AND status = 'approved'
       GROUP BY vat_category
-    `, [start_date, end_date, branch_id].filter(Boolean));
+    `, params);
 
     const totalOutputVat = outputRows.reduce((sum, r) => sum + parseFloat(r.vat_amount || 0), 0);
     const totalRecoverableVat = parseFloat(inputRows[0]?.vat_amount || 0);

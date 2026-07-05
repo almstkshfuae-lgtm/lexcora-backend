@@ -109,13 +109,10 @@ const createEmployee = async (employee) => {
 
   const {
     name,
-    username,
     roleId,
-    employeeNumber,
     email,
     identityNumber,
     passportNumber,
-    phoneNumber,
     departmentId,
     directManagerId = null,
     identityExpiryDate,
@@ -141,6 +138,22 @@ const createEmployee = async (employee) => {
     registrationExpirationDate,
     hourlyRate = 0
   } = employee;
+
+  // Support both phoneNumber and phone field names
+  const phoneNumber = employee.phoneNumber || employee.phone || null;
+
+  // Auto-generate username if not provided
+  let username = employee.username;
+  if (!username || username.trim() === '') {
+    username = Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // Auto-generate employee number (job_id) if not provided - it's NOT NULL in DB
+  let employeeNumber = employee.employeeNumber || employee.job_id;
+  if (!employeeNumber || String(employeeNumber).trim() === '') {
+    // Generate a unique employee number: EMP + timestamp + random
+    employeeNumber = 'EMP' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
+  }
 
   // Helper function to convert empty strings to null for date fields
   const normalizeDate = (date) => {
