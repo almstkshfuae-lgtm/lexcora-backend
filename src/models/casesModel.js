@@ -1012,5 +1012,6 @@ module.exports = {
   clearRelatedCases,
   addRelatedCase,
   getCasePartyDocumentById,
-  updateCaseAdditionalNote
+  updateCaseAdditionalNote,
+  findDuplicateCase
 };
